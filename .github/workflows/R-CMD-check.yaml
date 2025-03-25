@@ -1,0 +1,40 @@
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+name: R Build and Checks
+
+jobs:
+  R-CMD-check:
+    runs-on: ubuntu-${{ matrix.config.os }}
+
+    name: ubuntu-${{ matrix.config.os }} (${{ matrix.config.r }} / ${{ matrix.config.bioc }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - { os: 24.04, r: '4.4', bioc: '3.20' }
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bimberlabinternal/DevOps/githubActions/r-gh-setup@master
+        with:
+          r_version: ${{ matrix.config.r }}
+          bioc_version: ${{ matrix.config.bioc }}
+          cache_version: ${{ secrets.CACHE_VERSION }}
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--no-manual")'
+        env:
+          _R_CHECK_CRAN_INCOMING_: false

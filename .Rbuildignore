@@ -1,0 +1,9 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.git*
+^\.idea*
+^nimbleR.iml$
+^nimbleR.*\.tar\.gz$
+^nimbleR.*\.zip$
+^\.github$
+.dockerignore
