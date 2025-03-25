@@ -24,7 +24,7 @@
 #'
 #' @import dplyr
 #' @export
-AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL, doPlot = FALSE) {
+AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL) {
   if (!file.exists(nimbleFile)) {
     stop(paste0("Nimble file does not exist: ", nimbleFile))
   }
