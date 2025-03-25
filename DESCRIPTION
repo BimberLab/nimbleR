@@ -4,13 +4,17 @@ Title: Tools to use nimble data with seurat objects
 Version: 1.0.0
 Author: Bimber Lab
 Maintainer: The package maintainer <bimber@ohsu.edu>
-Description: A R package to format and append nimble RNA-seq count data to seurat objects
+Description: An R package to format and append nimble RNA-seq count data to seurat objects.
 License: MIT
 Encoding: UTF-8
 Depends:
     R (>= 4.3.0)
 Imports:
     Seurat,
+    Matrix,
+    egg,
+    scales,
+    methods,
     tidyr,
     dplyr,
     ggplot2

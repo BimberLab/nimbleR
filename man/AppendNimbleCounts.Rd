@@ -15,7 +15,7 @@ AppendNimbleCounts(
   performDietSeurat = (targetAssayName \%in\% names(seuratObj@assays)),
   assayForLibrarySize = "RNA",
   maxLibrarySizeRatio = 0.05,
-  doPlot = TRUE,
+  doPlot = FALSE,
   maxFeaturesToPlot = 40,
   replaceExistingAssayData = TRUE,
   featureRenameList = NULL

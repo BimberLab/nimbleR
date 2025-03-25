@@ -1,3 +1,9 @@
+utils::globalVariables(
+  names = c('V1','V2','V3'),
+  package = 'nimbleR',
+  add = TRUE
+)
+
 # @include Normalization.R
 
 #' @import Seurat
@@ -32,7 +38,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   # Read file and construct df
   df <- NULL
   tryCatch({
-    df <- read.table(nimbleFile, sep="\t", header=FALSE)
+    df <- utils::read.table(nimbleFile, sep="\t", header=FALSE)
   }, error = function(e){
     if (conditionMessage(e) != 'no lines available in input') {
       stop(e)
@@ -61,7 +67,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
 
   d <- as.integer(df$V2)
   if (any(is.na(d))){
-    stop(paste0('Non-integer count values found, were: ', paste0(head(df$V2[is.na(d)]), collapse = ',')))
+    stop(paste0('Non-integer count values found, were: ', paste0(utils::head(df$V2[is.na(d)]), collapse = ',')))
   }
 
   if (is.na(maxAmbiguityAllowed) || is.null(maxAmbiguityAllowed)){
@@ -125,7 +131,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
       x$Total <- paste0(x$Total, ' (', scales::percent(x$Total / totalUMI, accuracy = 0.001), ')')
 
       print('Top ambiguous combinations:')
-      print(head(x[c('Name', 'Total')], n = 100))
+      print(utils::head(x[c('Name', 'Total')], n = 100))
     }
 
     df <- df[!ambigFeatRows, , drop = F]
@@ -155,7 +161,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
 
     df <- tidyr::pivot_wider(df, names_from=V3, values_from=V2, values_fill=0)
   }, error = function(e){
-    write.table(df, file = 'debug.nimble.txt.gz', sep = '\t', quote = F, row.names = F)
+    utils::write.table(df, file = 'debug.nimble.txt.gz', sep = '\t', quote = F, row.names = F)
 
     print(paste0('Error pivoting input data for assay:', targetAssayName, ', results saved to: debug.nimble.txt.gz'))
     print(conditionMessage(e))

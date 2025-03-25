@@ -1,3 +1,9 @@
+utils::globalVariables(
+  names = c('lsr'),
+  package = 'nimbleR',
+  add = TRUE
+)
+
 
 #' @title LogNormalizeUsingAlternateAssay
 #'
