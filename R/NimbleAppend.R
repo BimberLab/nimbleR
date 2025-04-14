@@ -157,7 +157,17 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     }
     rm(d)
 
+    # Remove barcodes from nimble that aren't in seurat
+    uniqueCells <- unique(df$V3)
+    cellsToDrop <- uniqueCells[ ! uniqueCells %in% colnames(seuratObj) ]
+    if (length(cellsToDrop) > 0) {
+      nKept <- length(uniqueCells[ uniqueCells %in% colnames(seuratObj) ])
+      print(paste0('Dropping ', length(cellsToDrop), ' cell barcodes not in the seurat object (out of ', length(uniqueCells), '). Keeping: ', nKept))
+      df <- df %>% filter( ! V3 %in% cellsToDrop)
+    }
+
     paste0('Distinct features: ', length(unique(df$V1)))
+    paste0('Distinct cells: ', length(unique(df$V3)))
 
     df <- tidyr::pivot_wider(df, names_from=V3, values_from=V2, values_fill=0)
   }, error = function(e){
@@ -177,16 +187,6 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
 
   appendToExistingAssay <- targetAssayName %in% names(seuratObj@assays)
 
-  # Remove barcodes from nimble that aren't in seurat
-  seuratBarcodes <- colnames(seuratObj@assays[[Seurat::DefaultAssay(seuratObj)]])
-  barcodeDiff <- colnames(df) %in% seuratBarcodes
-  barcodeDiff[1] <- TRUE # retain feature name
-  numColsToDrop <- length(barcodeDiff) - sum(barcodeDiff)
-  if (numColsToDrop > 0) {
-    print(paste0('Dropping ', numColsToDrop, ' cell barcodes not in the seurat object (out of ', (ncol(df)-1), ')'))
-  }
-  df <- df[barcodeDiff]
-  
   # Fill zeroed barcodes that are in seurat but not in nimble
   zeroedBarcodes <- setdiff(seuratBarcodes, colnames(df)[-1])
   print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', length(seuratBarcodes), ' cells'))

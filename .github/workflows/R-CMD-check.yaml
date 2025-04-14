@@ -38,3 +38,11 @@ jobs:
           args: 'c("--no-manual")'
         env:
           _R_CHECK_CRAN_INCOMING_: false
+
+      - name: Trigger RDiscvr Docker
+        if: github.ref == 'refs/heads/main' && github.event_name != 'repository_dispatch'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: bimberlabinternal/Rdiscvr
+          event-type: docker
