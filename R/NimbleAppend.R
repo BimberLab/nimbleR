@@ -188,8 +188,8 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   appendToExistingAssay <- targetAssayName %in% names(seuratObj@assays)
 
   # Fill zeroed barcodes that are in seurat but not in nimble
-  zeroedBarcodes <- setdiff(seuratBarcodes, colnames(df)[-1])
-  print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', length(seuratBarcodes), ' cells'))
+  zeroedBarcodes <- setdiff(colnames(seuratObj), colnames(df)[-1])
+  print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', ncol(seuratObj), ' cells'))
   for (barcode in zeroedBarcodes) {
     df[barcode] <- 0
   }
@@ -207,7 +207,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     stop(paste0('Error: no column names in nimble count matrix, size: ', paste0(dim(m), collapse = ' by ')))
   }
 
-  m <- m[,seuratBarcodes, drop=FALSE] # Ensure column order matches
+  m <- m[,colnames(seuratObj), drop=FALSE] # Ensure column order matches
   if (appendToExistingAssay && ncol(m) != ncol(seuratObj@assays[[targetAssayName]])) {
     stop(paste0('Error parsing nimble data, ncol not equal after subset, was ', ncol(m)))
   }
