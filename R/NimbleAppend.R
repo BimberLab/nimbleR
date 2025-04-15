@@ -271,6 +271,12 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     if (any(duplicated(rownames(m)))) {
       stop('Error: The count matrix had duplicate rownames')
     }
+
+    if (nrow(m) == 0) {
+      warning('No features present in incoming data, skipping append')
+      return(seuratObj)
+    }
+
     seuratObj[[targetAssayName]] <- Seurat::CreateAssayObject(counts = m, min.features = 0, min.cells = 0)
 
     fs <- rep('Nimble', nrow(seuratObj@assays[[targetAssayName]]))
