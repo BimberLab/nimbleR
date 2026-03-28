@@ -263,7 +263,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     }
 
     # Append nimble matrix to seurat count matrix
-    existingBarcodes <- colnames(Seurat::GetAssayData(seuratObj, assay = targetAssayName, slot = 'counts'))
+    existingBarcodes <- colnames(Seurat::GetAssayData(seuratObj, assay = targetAssayName, layer = 'counts'))
     if (sum(colnames(m) != existingBarcodes) > 0) {
       stop('cellbarcodes do not match on matrices')
     }
@@ -279,7 +279,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     fs <- c(fs, rep('Nimble', nrow(m)))
 
     # perform in two steps to avoid warnings:
-    ad <- Seurat::CreateAssayObject(counts = Seurat::as.sparse(rbind(Seurat::GetAssayData(seuratObj, assay = targetAssayName, slot = 'counts'), m)))
+    ad <- Seurat::CreateAssayObject(counts = Seurat::as.sparse(rbind(Seurat::GetAssayData(seuratObj, assay = targetAssayName, layer = 'counts'), m)))
     if (targetAssayName != Seurat::DefaultAssay(seuratObj)) {
       seuratObj[[targetAssayName]] <- NULL
     }
@@ -288,7 +288,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     names(fs) <- rownames(seuratObj@assays[[targetAssayName]])
     seuratObj@assays[[targetAssayName]] <- Seurat::AddMetaData(seuratObj@assays[[targetAssayName]], metadata = fs, col.name = 'FeatureSource')
 
-    if (sum(colnames(Seurat::GetAssayData(seuratObj, assay = targetAssayName, slot = 'counts')) != existingBarcodes) > 0) {
+    if (sum(colnames(Seurat::GetAssayData(seuratObj, assay = targetAssayName, layer = 'counts')) != existingBarcodes) > 0) {
       stop('cellbarcodes do not match on matrices after assay replacement')
     }
   } else {
