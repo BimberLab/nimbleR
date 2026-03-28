@@ -17,7 +17,8 @@ Imports:
     methods,
     tidyr,
     dplyr,
-    ggplot2
+    ggplot2,
+    logger
 Suggests:
     RIRA,
     SeuratData,
@@ -26,6 +27,6 @@ Suggests:
 Remotes:
     SeuratData=satijalab/seurat-data,
     bimberlab/RIRA
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 URL: https://github.com/BimberLab/nimbleR
 BugReports: https://github.com/BimberLab/nimbleR/issues

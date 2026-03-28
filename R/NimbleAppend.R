@@ -26,11 +26,12 @@ utils::globalVariables(
 #' @param maxFeaturesToPlot If doPlot is true, this is the maximum number of features to plot
 #' @param replaceExistingAssayData If true, any existing data in the targetAssay will be deleted
 #' @param featureRenameList An optional named list in the format <OLD_NAME> = <NEW_NAME>. If any <OLD_NAME> are present, the will be renamed to <NEW_NAME>. The intention of this is to recover specific ambiguous classes.
+#' @param debugLogging If true, the logger package will be used to output information to the command line
 #' @return A modified Seurat object.
 #'
 #' @import dplyr
 #' @export
-AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL) {
+AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL, debugLogging = FALSE) {
   if (!file.exists(nimbleFile)) {
     stop(paste0("Nimble file does not exist: ", nimbleFile))
   }
@@ -111,6 +112,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     return(length(unlist(strsplit(y, split = ','))))
   })
 
+  if (debugLogging) {
+    logger::log_info('Processing ambugious features')
+  }
+
   ambigFeatRows <- totalHitsByRow > maxAmbiguityAllowed
   if (sum(ambigFeatRows) > 0) {
     print(paste0('Dropping ', sum(ambigFeatRows), ' rows with ambiguous features (>', maxAmbiguityAllowed, '), ', sum(ambigFeatRows),' of ', nrow(df)))
@@ -149,6 +154,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     print(paste0('After re-grouping: ', nrow(df)))
   }
 
+  if (debugLogging) {
+    logger::log_info('Checking for duplicated cell/features')
+  }
+
   tryCatch({
     # Group to ensure we have one value per combination:
     d <- as.integer(df$V2)
@@ -169,7 +178,15 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     paste0('Distinct features: ', length(unique(df$V1)))
     paste0('Distinct cells: ', length(unique(df$V3)))
 
+    if (debugLogging) {
+      logger::log_info('Pivoting into wide table')
+    }
+
     df <- tidyr::pivot_wider(df, names_from=V3, values_from=V2, values_fill=0)
+
+    if (debugLogging) {
+      logger::log_info('Pivot complete')
+    }
   }, error = function(e){
     utils::write.table(df, file = 'debug.nimble.txt.gz', sep = '\t', quote = F, row.names = F)
 
@@ -195,6 +212,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
   
   # Cast nimble df to matrix
+  if (debugLogging) {
+    logger::log_info('Casting to a sparse matrix')
+  }
+
   featureNames <- df$V1
   if (any(duplicated(featureNames))) {
     stop('Error, there were duplicate feature names')
@@ -217,6 +238,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (appendToExistingAssay) {
+    if (debugLogging) {
+      logger::log_info('Appending nimble to existing assay')
+    }
+
     if (any(rownames(m) %in% rownames(seuratObj@assays[[targetAssayName]]))) {
       conflicting <- rownames(m)[rownames(m) %in% rownames(seuratObj@assays[[targetAssayName]])]
 
@@ -268,6 +293,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     }
   } else {
     # Add nimble as separate assay
+    if (debugLogging) {
+      logger::log_info('Adding nimble data as separate assay')
+    }
+
     if (any(duplicated(rownames(m)))) {
       stop('Error: The count matrix had duplicate rownames')
     }
@@ -285,6 +314,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (normalizeData) {
+    if (debugLogging) {
+      logger::log_info('Normalizing nimble data')
+    }
+
     if (targetAssayName == assayForLibrarySize) {
       print('Normalizing using Seurat::NormalizeData')
       seuratObj <- Seurat::NormalizeData(seuratObj, assay = targetAssayName, verbose = FALSE)
@@ -295,6 +328,10 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (doPlot) {
+    if (debugLogging) {
+      logger::log_info('Plotting nimble data')
+    }
+
     if (!requireNamespace("RIRA", quietly = TRUE)) {
       warning("The RIRA package must be installed to perform plotting")
     } else {
