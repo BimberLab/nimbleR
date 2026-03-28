@@ -204,13 +204,6 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
 
   appendToExistingAssay <- targetAssayName %in% names(seuratObj@assays)
 
-  # Fill zeroed barcodes that are in seurat but not in nimble
-  zeroedBarcodes <- setdiff(colnames(seuratObj), colnames(df)[-1])
-  print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', ncol(seuratObj), ' cells'))
-  for (barcode in zeroedBarcodes) {
-    df[barcode] <- 0
-  }
-  
   # Cast nimble df to matrix
   if (debugLogging) {
     logger::log_info('Casting to a sparse matrix')
@@ -226,6 +219,20 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   dimnames(m) <- list(featureNames, colnames(df))
   if (is.null(colnames(m))) {
     stop(paste0('Error: no column names in nimble count matrix, size: ', paste0(dim(m), collapse = ' by ')))
+  }
+
+  # Fill zeroed barcodes that are in seurat but not in nimble
+  zeroedBarcodes <- setdiff(colnames(seuratObj), colnames(m))
+  print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', ncol(seuratObj), ' cells'))
+  if (length(zeroedBarcodes) > 0) {
+    if (debugLogging) {
+      logger::log_info('Adding zeros for missing barcodes')
+    }
+
+    toAdd <- matrix(rep(0, length(zeroedBarcodes)*nrow(m)), ncol = length(zeroedBarcodes))
+    dimnames(toAdd) <- list(featureNames, zeroedBarcodes)
+    toAdd <- Seurat::as.sparse(toAdd)
+    m <- cbind(m, toAdd)
   }
 
   m <- m[,colnames(seuratObj), drop=FALSE] # Ensure column order matches
