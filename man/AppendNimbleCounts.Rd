@@ -18,8 +18,7 @@ AppendNimbleCounts(
   doPlot = FALSE,
   maxFeaturesToPlot = 40,
   replaceExistingAssayData = TRUE,
-  featureRenameList = NULL,
-  debugLogging = FALSE
+  featureRenameList = NULL
 )
 }
 \arguments{
@@ -50,8 +49,6 @@ AppendNimbleCounts(
 \item{replaceExistingAssayData}{If true, any existing data in the targetAssay will be deleted}
 
 \item{featureRenameList}{An optional named list in the format <OLD_NAME> = <NEW_NAME>. If any <OLD_NAME> are present, the will be renamed to <NEW_NAME>. The intention of this is to recover specific ambiguous classes.}
-
-\item{debugLogging}{If true, the logger package will be used to output information to the command line}
 }
 \value{
 A modified Seurat object.
