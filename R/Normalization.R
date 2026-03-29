@@ -57,7 +57,16 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
 
     return(xnorm)
   })))
+  colnames(normalizedMat) <- colnames(toNormalize)
   end_time <- Sys.time()
+
+  if (all(is.null(rownames(normalizedMat))) || any(rownames(toNormalize) != rownames(normalizedMat))) {
+    stop('Row names not equal')
+  }
+
+  if (all(is.null(colnames(normalizedMat))) || any(colnames(toNormalize) != colnames(normalizedMat))) {
+    stop('Column names not equal')
+  }
 
   if (.doDebugLogging()) {
     logger::log_info('Normalization done')
