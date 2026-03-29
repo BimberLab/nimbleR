@@ -2,6 +2,7 @@
 
 export(AppendNimbleCounts)
 export(LogNormalizeUsingAlternateAssay)
+import(Matrix)
 import(Seurat)
 import(dplyr)
 import(ggplot2)

@@ -4,6 +4,7 @@ utils::globalVariables(
   add = TRUE
 )
 
+#' @include Utils.R
 
 #' @title LogNormalizeUsingAlternateAssay
 #'
@@ -13,7 +14,7 @@ utils::globalVariables(
 #' @param scale.factor A scale factor to be applied in normalization
 #' @param maxLibrarySizeRatio This normalization relies on the assumption that the library size of the assay being normalized in negligible relative to the assayForLibrarySize. To verify this holds true, the method will error if librarySize(assayToNormalize)/librarySize(assayForLibrarySize) exceeds this value
 #'
-#' @import ggplot2
+#' @import ggplot2 Matrix
 #' @export
 LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayForLibrarySize = 'RNA', scale.factor = 1e4, maxLibrarySizeRatio = 0.01) {
   toNormalize <- Seurat::GetAssayData(seuratObj, assayToNormalize, layer = 'counts')
@@ -31,8 +32,17 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
   ncells <- dim(x = toNormalize)[margin]
 
   start_time <- Sys.time()
+  if (.doDebugLogging()) {
+    logger::log_info('Calculating cell sizes for nimble nimble normalization')
+  }
   assayForLibrarySizeData <- Matrix::colSums(assayForLibrarySizeObj)
-  ratios <- unlist(sapply(seq_len(length.out = ncells), function(i){
+
+  if (.doDebugLogging()) {
+    logger::log_info('Normalizing cells')
+  }
+
+  ratios <- c()
+  normalizedMat <- Seurat::as.sparse(cbind(sapply(seq_len(length.out = ncells), function(i){
     x <- toNormalize[, i]
     sumX <- sum(x)
     librarySize <- sumX + assayForLibrarySizeData[i]
@@ -41,13 +51,17 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
     if (lsr > maxLibrarySizeRatio) {
       stop(paste0('The ratio of library sizes was above maxLibrarySizeRatio for cell: ', colnames(assayForLibrarySizeObj)[i], ', on assay: ', assayToNormalize, '. Ratio was: ', lsr, ' (', sumX, ' / ', librarySize, ')'))
     }
+    ratios <<- c(ratios, lsr)
 
     xnorm <- log1p(x = x / librarySize * scale.factor)
-    toNormalize[, i] <<- xnorm
 
-    return(lsr)
-  }))
+    return(xnorm)
+  })))
   end_time <- Sys.time()
+
+  if (.doDebugLogging()) {
+    logger::log_info('Normalization done')
+  }
 
   print('Normalization time:')
   print(end_time - start_time)
@@ -58,7 +72,7 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
           egg::theme_article()
   )
 
-  seuratObj <- Seurat::SetAssayData(seuratObj, assay = assayToNormalize, layer = 'data', new.data = toNormalize)
+  seuratObj <- Seurat::SetAssayData(seuratObj, assay = assayToNormalize, layer = 'data', new.data = normalizedMat)
 
   return(seuratObj)
 }

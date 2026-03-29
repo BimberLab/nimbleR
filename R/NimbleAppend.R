@@ -5,7 +5,8 @@ utils::globalVariables(
 )
 
 # @include Normalization.R
-
+#' @include Utils.R
+#'
 #' @import Seurat
 #' @importFrom tidyr pivot_wider
 
@@ -26,12 +27,11 @@ utils::globalVariables(
 #' @param maxFeaturesToPlot If doPlot is true, this is the maximum number of features to plot
 #' @param replaceExistingAssayData If true, any existing data in the targetAssay will be deleted
 #' @param featureRenameList An optional named list in the format <OLD_NAME> = <NEW_NAME>. If any <OLD_NAME> are present, the will be renamed to <NEW_NAME>. The intention of this is to recover specific ambiguous classes.
-#' @param debugLogging If true, the logger package will be used to output information to the command line
 #' @return A modified Seurat object.
 #'
 #' @import dplyr
 #' @export
-AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL, debugLogging = FALSE) {
+AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbiguityAllowed = 0, renameConflictingFeatures = TRUE, duplicateFeatureSuffix = ".Nimble", normalizeData = TRUE, performDietSeurat = (targetAssayName %in% names(seuratObj@assays)), assayForLibrarySize = 'RNA', maxLibrarySizeRatio = 0.05, doPlot = FALSE, maxFeaturesToPlot = 40, replaceExistingAssayData = TRUE, featureRenameList = NULL) {
   if (!file.exists(nimbleFile)) {
     stop(paste0("Nimble file does not exist: ", nimbleFile))
   }
@@ -112,7 +112,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     return(length(unlist(strsplit(y, split = ','))))
   })
 
-  if (debugLogging) {
+  if (.doDebugLogging()) {
     logger::log_info('Processing ambugious features')
   }
 
@@ -154,7 +154,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     print(paste0('After re-grouping: ', nrow(df)))
   }
 
-  if (debugLogging) {
+  if (.doDebugLogging()) {
     logger::log_info('Checking for duplicated cell/features')
   }
 
@@ -178,13 +178,13 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     paste0('Distinct features: ', length(unique(df$V1)))
     paste0('Distinct cells: ', length(unique(df$V3)))
 
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Pivoting into wide table')
     }
 
     df <- tidyr::pivot_wider(df, names_from=V3, values_from=V2, values_fill=0)
 
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Pivot complete')
     }
   }, error = function(e){
@@ -205,7 +205,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   appendToExistingAssay <- targetAssayName %in% names(seuratObj@assays)
 
   # Cast nimble df to matrix
-  if (debugLogging) {
+  if (.doDebugLogging()) {
     logger::log_info('Casting to a sparse matrix')
   }
 
@@ -225,7 +225,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   zeroedBarcodes <- setdiff(colnames(seuratObj), colnames(m))
   print(paste0('Total cells lacking nimble data: ', length(zeroedBarcodes), ' of ', ncol(seuratObj), ' cells'))
   if (length(zeroedBarcodes) > 0) {
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Adding zeros for missing barcodes')
     }
 
@@ -245,7 +245,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (appendToExistingAssay) {
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Appending nimble to existing assay')
     }
 
@@ -300,7 +300,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
     }
   } else {
     # Add nimble as separate assay
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Adding nimble data as separate assay')
     }
 
@@ -321,7 +321,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (normalizeData) {
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Normalizing nimble data')
     }
 
@@ -335,7 +335,7 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
   }
 
   if (doPlot) {
-    if (debugLogging) {
+    if (.doDebugLogging()) {
       logger::log_info('Plotting nimble data')
     }
 
