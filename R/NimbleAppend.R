@@ -285,12 +285,9 @@ AppendNimbleCounts <- function(seuratObj, nimbleFile, targetAssayName, maxAmbigu
 
     fs <- c(fs, rep('Nimble', nrow(m)))
 
-    # perform in two steps to avoid warnings:
+    # NOTE: if the assay already exists, this will give warnings about the feature set changing:
     ad <- Seurat::CreateAssayObject(counts = Seurat::as.sparse(rbind(Seurat::GetAssayData(seuratObj, assay = targetAssayName, layer = 'counts'), m)))
-    if (targetAssayName != Seurat::DefaultAssay(seuratObj)) {
-      seuratObj[[targetAssayName]] <- NULL
-    }
-    seuratObj[[targetAssayName]] <- ad
+    suppressWarnings(seuratObj[[targetAssayName]] <- ad)
     
     names(fs) <- rownames(seuratObj@assays[[targetAssayName]])
     seuratObj@assays[[targetAssayName]] <- Seurat::AddMetaData(seuratObj@assays[[targetAssayName]], metadata = fs, col.name = 'FeatureSource')
