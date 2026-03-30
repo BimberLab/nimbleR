@@ -42,7 +42,7 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
   }
 
   ratios <- c()
-  normalizedMat <- Seurat::as.sparse(cbind(sapply(seq_len(length.out = ncells), function(i){
+  normalizedMat <- Seurat::as.sparse(apply(X = seq_len(length.out = ncells), MARGIN = margin, simplify = FALSE, FUN = function(i){
     x <- toNormalize[, i]
     sumX <- sum(x)
     librarySize <- sumX + assayForLibrarySizeData[i]
@@ -56,17 +56,10 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
     xnorm <- log1p(x = x / librarySize * scale.factor)
 
     return(xnorm)
-  })))
+  }))
   colnames(normalizedMat) <- colnames(toNormalize)
+  rownames(normalizedMat) <- rownames(toNormalize)
   end_time <- Sys.time()
-
-  if (all(is.null(rownames(normalizedMat))) || any(rownames(toNormalize) != rownames(normalizedMat))) {
-    stop('Row names not equal')
-  }
-
-  if (all(is.null(colnames(normalizedMat))) || any(colnames(toNormalize) != colnames(normalizedMat))) {
-    stop('Column names not equal')
-  }
 
   if (.doDebugLogging()) {
     logger::log_info('Normalization done')
