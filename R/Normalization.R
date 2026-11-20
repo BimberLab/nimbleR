@@ -17,47 +17,41 @@ utils::globalVariables(
 #' @import ggplot2 Matrix
 #' @export
 LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayForLibrarySize = 'RNA', scale.factor = 1e4, maxLibrarySizeRatio = 0.01) {
-  toNormalize <- Seurat::GetAssayData(seuratObj, assayToNormalize, layer = 'counts')
-  assayForLibrarySizeObj <- Seurat::GetAssayData(seuratObj, assay = assayForLibrarySize, layer = 'counts')
+  toNormalize <- Seurat::GetAssayData(seuratObj, assay = assayToNormalize, layer = 'counts')
+  toNormalize <- as(toNormalize, 'CsparseMatrix')   # ensure dgCMatrix
+  libSizeCounts <- Seurat::GetAssayData(seuratObj, assay = assayForLibrarySize, layer = 'counts')
 
-  if (any(colnames(toNormalize) != colnames(assayForLibrarySize))) {
-    stop(paste0('The assayToNormalize and assayForLibrarySize do not have the same cell names!'))
+  if (!setequal(colnames(toNormalize), colnames(libSizeCounts))) {
+    stop('The assayToNormalize and assayForLibrarySize do not have the same cell names!')
   }
 
   if (is.null(maxLibrarySizeRatio) || is.na(maxLibrarySizeRatio)) {
     maxLibrarySizeRatio <- Inf
   }
 
-  margin <- 2
-  ncells <- dim(x = toNormalize)[margin]
-
   start_time <- Sys.time()
   if (.doDebugLogging()) {
     logger::log_info('Calculating cell sizes for nimble nimble normalization')
   }
-  assayForLibrarySizeData <- Matrix::colSums(assayForLibrarySizeObj)
 
-  if (.doDebugLogging()) {
-    logger::log_info('Normalizing cells')
+  sumX <- Matrix::colSums(toNormalize)
+  otherSizes <- Matrix::colSums(libSizeCounts)[colnames(toNormalize)]
+  librarySize <- sumX + otherSizes
+
+  ratios <- ifelse(librarySize > 0, sumX / librarySize, 0)
+  bad <- which(ratios > maxLibrarySizeRatio)
+  if (length(bad) > 0) {
+    i <- bad[1]
+    stop(paste0('The ratio of library sizes was above maxLibrarySizeRatio for ', length(bad),
+                ' cell(s), e.g.: ', colnames(toNormalize)[i], ', on assay: ', assayToNormalize,
+                '. Ratio was: ', ratios[i], ' (', sumX[i], ' / ', librarySize[i], ')'))
   }
 
-  ratios <- c()
-  normalizedMat <- Seurat::as.sparse(cbind(sapply(seq_len(length.out = ncells), function(i){
-    x <- toNormalize[, i]
-    sumX <- sum(x)
-    librarySize <- sumX + assayForLibrarySizeData[i]
+  # Scale each nonzero entry by its column's library size
+  normalizedMat <- toNormalize
+  colIdx <- rep.int(seq_len(ncol(normalizedMat)), diff(normalizedMat@p))
+  normalizedMat@x <- log1p(normalizedMat@x / librarySize[colIdx] * scale.factor)
 
-    lsr <- (sumX / librarySize)
-    if (lsr > maxLibrarySizeRatio) {
-      stop(paste0('The ratio of library sizes was above maxLibrarySizeRatio for cell: ', colnames(assayForLibrarySizeObj)[i], ', on assay: ', assayToNormalize, '. Ratio was: ', lsr, ' (', sumX, ' / ', librarySize, ')'))
-    }
-    ratios <<- c(ratios, lsr)
-
-    xnorm <- log1p(x = x / librarySize * scale.factor)
-
-    return(xnorm)
-  })))
-  colnames(normalizedMat) <- colnames(toNormalize)
   end_time <- Sys.time()
 
   if (all(is.null(rownames(normalizedMat))) || any(rownames(toNormalize) != rownames(normalizedMat))) {
@@ -81,7 +75,5 @@ LogNormalizeUsingAlternateAssay <- function(seuratObj, assayToNormalize, assayFo
           egg::theme_article()
   )
 
-  seuratObj <- Seurat::SetAssayData(seuratObj, assay = assayToNormalize, layer = 'data', new.data = normalizedMat)
-
-  return(seuratObj)
+  return(Seurat::SetAssayData(seuratObj, assay = assayToNormalize, layer = 'data', new.data = normalizedMat))
 }
